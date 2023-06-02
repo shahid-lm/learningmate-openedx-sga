@@ -15,6 +15,13 @@ from submissions import api as submissions_api
 from edx_sga.constants import ITEM_TYPE
 from edx_sga.utils import get_file_storage_path, is_finalized_submission
 
+# from django.core.mail import send_mail
+# from edx_ace import ace
+# from edx_ace.message import Message
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from common.djangoapps.student.models import CourseAccessRole
+from django.contrib.auth.models import User
+
 log = logging.getLogger(__name__)
 
 
@@ -143,3 +150,33 @@ def get_zip_file_path(username, course_id, block_id, locator):
     return os.path.join(
         get_zip_file_dir(locator), get_zip_file_name(username, course_id, block_id)
     )
+    
+@shared_task(bind=True, default_retry_delay=30, max_retries=2)
+def send_email_to_instructor(course_id=''):
+    try:
+        if course_id not in ['',None]:   
+            mail_subject="Test Email"
+            message="A Test Email"
+            from_address = configuration_helpers.get_value('ACTIVATION_EMAIL_FROM_ADDRESS') or (
+            configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
+            )
+            # filter CourseAccessRole model to get list of instructor Ids
+            all_teacher_emailIds = []
+            course_access_objs = CourseAccessRole.objects.filter(course_id=course_id).all()
+            for course_obj in course_access_objs:
+                to_email = User.objects.filter(id=course_obj.user).values_list('email',flat=True)[0]
+                all_teacher_emailIds.extend([to_email])
+            send_mail(
+                subject= mail_subject,
+                message=message,
+                from_email=from_address,
+                recipient_list=all_teacher_emailIds,
+                fail_silently=True,
+            )
+            log.info('################## Sent email to instructor ##################')
+            return
+        log.error('################## Couldn\'t send email to instructor - CourseId not found ##################')
+        return
+    except Exception as e:
+        log.error('################## Couldn\'t send email to instructor ##################')
+        return

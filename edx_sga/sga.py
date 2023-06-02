@@ -41,7 +41,7 @@ from xmodule.util.duedate import get_extended_due_date
 
 from edx_sga.constants import ITEM_TYPE
 from edx_sga.showanswer import ShowAnswerXBlockMixin
-from edx_sga.tasks import get_zip_file_name, get_zip_file_path, zip_student_submissions
+from edx_sga.tasks import get_zip_file_name, get_zip_file_path, zip_student_submissions,send_email_to_instructor
 from edx_sga.utils import (
     file_contents_iter,
     get_file_modified_time_utc,
@@ -303,6 +303,7 @@ class StaffGradedAssignmentXBlock(
             submission.answer["finalized"] = True
             submission.submitted_at = django_now()
             submission.save()
+        send_email_to_instructor(course_id=self.block_course_id())
         return Response(json_body=self.student_state())
 
     @XBlock.handler
