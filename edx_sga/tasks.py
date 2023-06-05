@@ -154,7 +154,8 @@ def get_zip_file_path(username, course_id, block_id, locator):
 @shared_task(bind=True, default_retry_delay=30, max_retries=2)
 def send_email_to_instructor(course_id=''):
     try:
-        if course_id not in ['',None]:   
+        if course_id not in ['',None]:
+            log.info('################## Inside send_email_to_instructor()')   
             mail_subject="Test Email"
             message="A Test Email"
             from_address = configuration_helpers.get_value('ACTIVATION_EMAIL_FROM_ADDRESS') or (
@@ -166,6 +167,8 @@ def send_email_to_instructor(course_id=''):
             for course_obj in course_access_objs:
                 to_email = User.objects.filter(id=course_obj.user).values_list('email',flat=True)[0]
                 all_teacher_emailIds.extend([to_email])
+            log.info(f'################### all_teacher_emailIds - {all_teacher_emailIds}')
+            log.info(f'################### from_address - {from_address}')
             send_mail(
                 subject= mail_subject,
                 message=message,

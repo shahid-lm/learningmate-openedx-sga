@@ -303,6 +303,7 @@ class StaffGradedAssignmentXBlock(
             submission.answer["finalized"] = True
             submission.submitted_at = django_now()
             submission.save()
+        log.info(f'########################## course_id {self.block_course_id}')
         send_email_to_instructor(course_id=self.block_course_id)
         return Response(json_body=self.student_state())
 
