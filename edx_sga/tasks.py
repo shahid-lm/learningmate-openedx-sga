@@ -152,7 +152,7 @@ def get_zip_file_path(username, course_id, block_id, locator):
     )
     
 @shared_task(bind=True, default_retry_delay=30, max_retries=2)
-def send_email_to_instructor(course_id=''):
+def send_email_to_instructor(course_id):
     try:
         if course_id not in ['',None]:
             log.info('################## Inside send_email_to_instructor()')   
