@@ -18,7 +18,6 @@ from edx_sga.utils import get_file_storage_path, is_finalized_submission
 # from django.core.mail import send_mail
 # from edx_ace import ace
 # from edx_ace.message import Message
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from common.djangoapps.student.models import CourseAccessRole
 from django.contrib.auth.models import User
 
@@ -152,15 +151,12 @@ def get_zip_file_path(username, course_id, block_id, locator):
     )
     
 @shared_task(bind=True, default_retry_delay=30, max_retries=2)
-def send_email_to_instructor(self,course_id):
+def send_email_to_instructor(self,course_id,from_address):
     try:
         if course_id not in ['',None]:
             log.info('################## Inside send_email_to_instructor()')   
             mail_subject="Test Email"
             message="A Test Email"
-            from_address = configuration_helpers.get_value('ACTIVATION_EMAIL_FROM_ADDRESS') or (
-            configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
-            )
             # filter CourseAccessRole model to get list of instructor Ids
             all_teacher_emailIds = []
             course_access_objs = CourseAccessRole.objects.filter(course_id=course_id).all()

@@ -50,6 +50,7 @@ from edx_sga.utils import (
     is_finalized_submission,
     utcnow,
 )
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 
 log = logging.getLogger(__name__)
 
@@ -304,7 +305,9 @@ class StaffGradedAssignmentXBlock(
             submission.submitted_at = django_now()
             submission.save()
         log.info(f'########################## course_id {self.block_course_id}')
-        send_email_to_instructor(str(self.block_course_id))
+        from_address = configuration_helpers.get_value('ACTIVATION_EMAIL_FROM_ADDRESS') or (
+            configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
+        send_email_to_instructor(str(self.block_course_id),from_address)
         return Response(json_body=self.student_state())
 
     @XBlock.handler
