@@ -181,5 +181,5 @@ def send_email_to_instructor(self,course_id):
         log.error('################## Couldn\'t send email to instructor - CourseId not found ##################')
         return
     except Exception as e:
-        log.error('################## Couldn\'t send email to instructor ##################')
+        log.error(f'################## Couldn\'t send email to instructor {str(e)} ##################')
         return
