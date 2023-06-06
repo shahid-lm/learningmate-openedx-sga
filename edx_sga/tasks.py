@@ -154,13 +154,13 @@ def get_zip_file_path(username, course_id, block_id, locator):
 def send_email_to_instructor(self,course_id,from_address,message_payload):
     try:
         if course_id not in ['',None]:
-            logger.info(f'############### {json.dumps(message_payload)} ##############')
+            log.info(f'############### {json.dumps(message_payload)} ##############')
             if message_payload['assignments']:
                 message='''There is a new submission\n \
                         Student Username : {}\n \
                         Filename : {}\n \
-                        Submitted at : {}\n \
-                        All payload : {}
+                        Submitted At : {}\n \
+                        All Payload : {}
                         '''.format(message_payload['assignments'][0].get('username',None),
                                    message_payload['assignments'][0].get('filename',None),
                                    message_payload['assignments'][0].get('timestamp',None),
