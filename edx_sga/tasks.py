@@ -15,7 +15,7 @@ from submissions import api as submissions_api
 from edx_sga.constants import ITEM_TYPE
 from edx_sga.utils import get_file_storage_path, is_finalized_submission
 
-# from django.core.mail import send_mail
+from django.core.mail import send_mail
 # from edx_ace import ace
 # from edx_ace.message import Message
 from common.djangoapps.student.models import CourseAccessRole
@@ -151,17 +151,29 @@ def get_zip_file_path(username, course_id, block_id, locator):
     )
     
 @shared_task(bind=True, default_retry_delay=30, max_retries=2)
-def send_email_to_instructor(self,course_id,from_address):
+def send_email_to_instructor(self,course_id,from_address,message_payload):
     try:
         if course_id not in ['',None]:
-            log.info('################## Inside send_email_to_instructor()')   
-            mail_subject="Test Email"
-            message="A Test Email"
+            logger.info(f'############### {json.dumps(message_payload)} ##############')
+            if message_payload['assignments']:
+                message='''There is a new submission\n \
+                        Student Username : {}\n \
+                        Filename : {}\n \
+                        Submitted at : {}\n \
+                        All payload : {}
+                        '''.format(message_payload['assignments'][0].get('username',None),
+                                   message_payload['assignments'][0].get('filename',None),
+                                   message_payload['assignments'][0].get('timestamp',None),
+                                   json.dumps(message_payload)
+                                )
+            else:
+                message = 'No submissions'
+            mail_subject=f"New submission for Staff Graded Assignment"
             # filter CourseAccessRole model to get list of instructor Ids
             all_teacher_emailIds = []
-            course_access_objs = CourseAccessRole.objects.filter(course_id=course_id).all()
+            course_access_objs = CourseAccessRole.objects.filter(course_id=course_id).values()
             for course_obj in course_access_objs:
-                to_email = User.objects.filter(id=course_obj.user).values_list('email',flat=True)[0]
+                to_email = User.objects.filter(id=course_obj['user_id']).values_list('email',flat=True)[0]
                 all_teacher_emailIds.extend([to_email])
             log.info(f'################### all_teacher_emailIds - {all_teacher_emailIds}')
             log.info(f'################### from_address - {from_address}')

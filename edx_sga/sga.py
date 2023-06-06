@@ -308,7 +308,8 @@ class StaffGradedAssignmentXBlock(
         from_address = configuration_helpers.get_value('ACTIVATION_EMAIL_FROM_ADDRESS') or (
                             configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
                         )
-        send_email_to_instructor(str(self.block_course_id),from_address)
+        message_payload = self.staff_grading_data()
+        send_email_to_instructor(str(self.block_course_id),from_address,message_payload)
         return Response(json_body=self.student_state())
 
     @XBlock.handler
