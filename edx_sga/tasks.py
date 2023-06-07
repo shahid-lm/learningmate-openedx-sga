@@ -155,16 +155,11 @@ def get_zip_file_path(username, course_id, block_id, locator):
 def send_email_to_instructor(self,course_id,from_address,message_payload):
     try:
         if course_id not in ['',None]:
-            log.info(f'############### {json.dumps(message_payload)} ##############')
             if message_payload['assignments']:
-                message='''There is a new submission\n \
-                        Student Username : {}\n \
-                        Filename : {}\n \
-                        Submitted At : {}\n \
-                        All Payload : {}
-                        '''.format(message_payload['assignments'][0].get('username',None),
-                                   message_payload['assignments'][0].get('filename',None),
-                                   message_payload['assignments'][0].get('timestamp',None),
+                message='''There's a new submission\nStudent Username : {}\nFilename : {}\nSubmitted At : {}\nAll Payload : {}
+                        '''.format(message_payload['assignments'][-1].get('username',None),
+                                   message_payload['assignments'][-1].get('filename',None),
+                                   message_payload['assignments'][-1].get('timestamp',None),
                                    json.dumps(message_payload)
                                 )
             else:
@@ -176,8 +171,6 @@ def send_email_to_instructor(self,course_id,from_address,message_payload):
             for course_obj in course_access_objs:
                 to_email = User.objects.filter(id=course_obj['user_id']).values_list('email',flat=True)[0]
                 all_teacher_emailIds.extend([to_email])
-            log.info(f'################### all_teacher_emailIds - {all_teacher_emailIds}')
-            log.info(f'################### from_address - {from_address}')
             send_mail(
                 subject= mail_subject,
                 message=message,
