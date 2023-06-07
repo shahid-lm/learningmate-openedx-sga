@@ -20,6 +20,7 @@ from django.core.mail import send_mail
 # from edx_ace.message import Message
 from common.djangoapps.student.models import CourseAccessRole
 from django.contrib.auth.models import User
+import json
 
 log = logging.getLogger(__name__)
 
