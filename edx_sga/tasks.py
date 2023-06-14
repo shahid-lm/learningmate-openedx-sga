@@ -196,7 +196,7 @@ def save_entry_to_openedxdb(self, course_id, message_payload):
         course_key = CourseKey.from_string(course_id)
         course = get_course_by_id(course_key, depth=None)
         course_name = course.display_name_with_default
-        teacher_ids = json.dumps(CourseAccessRole.objects.filter(course_id=course_id).values_list('user_id',flat=True))
+        teacher_ids = json.dumps(list(CourseAccessRole.objects.filter(course_id=course_id).values_list('user_id',flat=True)))
         data = {
             "course_name" : course_name,
             "assignment_name" : message_payload['display_name'],
@@ -204,6 +204,7 @@ def save_entry_to_openedxdb(self, course_id, message_payload):
             "teacher_id" : teacher_ids, # list of techer_ids stored as string
             "student_username" : message_payload['assignments'][-1].get('username',None)
         }
+        log.info(f'############# save_entry_to_openedxdb data-> {data}#############')
         serializer = StaffGradedSubmissionsSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
