@@ -159,11 +159,11 @@ def send_email_to_instructor(self,course_id,from_address,message_payload):
     try:
         if course_id not in ['',None]:
             if message_payload['assignments']:
-                message='''There's a new submission\nStudent Username : {}\nFilename : {}\nSubmitted At : {}\nAll Payload : {}
+                message='''There's a new submission\nStudent Username : {}\nFilename : {}\nSubmitted At : {}\nGo To All Submissions : {}
                         '''.format(message_payload['assignments'][-1].get('username',None),
                                    message_payload['assignments'][-1].get('filename',None),
                                    message_payload['assignments'][-1].get('timestamp',None),
-                                   json.dumps(message_payload)
+                                   "Not implemented yet"
                                 )
             else:
                 message = 'No submissions'
