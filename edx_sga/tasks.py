@@ -18,7 +18,10 @@ from edx_sga.utils import get_file_storage_path, is_finalized_submission
 from django.core.mail import send_mail
 # from edx_ace import ace
 # from edx_ace.message import Message
+from openedx.core.lib.courses import get_course_by_id
 from common.djangoapps.student.models import CourseAccessRole
+from lms.djangoapps.lms_xblock.serializers import StaffGradedSubmissionsSerializer
+from opaque_keys.edx.keys import CourseKey
 from django.contrib.auth.models import User
 import json
 
@@ -185,3 +188,27 @@ def send_email_to_instructor(self,course_id,from_address,message_payload):
     except Exception as e:
         log.error(f'################## Couldn\'t send email to instructor {str(e)} ##################')
         return
+    
+@shared_task(bind=True)
+def save_entry_to_openedxdb(self, course_id, message_payload):
+    try:
+        # convert course_key to name
+        course_key = CourseKey.from_string(course_id)
+        course = get_course_by_id(course_key, depth=None)
+        course_name = course.display_name_with_default
+        teacher_ids = json.dumps(CourseAccessRole.objects.filter(course_id=course_id).values_list('user_id',flat=True))
+        data = {
+            "course_name" : course_name,
+            "assignment_name" : message_payload['display_name'],
+            "direct_link" : "https://learningmate.com/",
+            "teacher_id" : teacher_ids, # list of techer_ids stored as string
+            "student_username" : message_payload['assignments'][-1].get('username',None)
+        }
+        serializer = StaffGradedSubmissionsSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            log.info('############## save_entry_to_openedxdb - successfully saved sga entry')
+        else:
+            log.error('############## Couldn\'t save sga entry - serializer not valid')
+    except Exception as e:
+        log.error(f'############## Couldn\'t save sga entry -error {str(e)}')

@@ -41,7 +41,13 @@ from xmodule.util.duedate import get_extended_due_date
 
 from edx_sga.constants import ITEM_TYPE
 from edx_sga.showanswer import ShowAnswerXBlockMixin
-from edx_sga.tasks import get_zip_file_name, get_zip_file_path, zip_student_submissions,send_email_to_instructor
+from edx_sga.tasks import (
+                            get_zip_file_name, 
+                            get_zip_file_path, 
+                            zip_student_submissions,
+                            send_email_to_instructor,
+                            save_entry_to_openedxdb
+                            )
 from edx_sga.utils import (
     file_contents_iter,
     get_file_modified_time_utc,
@@ -310,6 +316,7 @@ class StaffGradedAssignmentXBlock(
                         )
         message_payload = self.staff_grading_data()
         send_email_to_instructor(str(self.block_course_id),from_address,message_payload)
+        save_entry_to_openedxdb(str(self.block_course_id),message_payload)
         return Response(json_body=self.student_state())
 
     @XBlock.handler
