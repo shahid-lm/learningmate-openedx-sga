@@ -310,13 +310,13 @@ class StaffGradedAssignmentXBlock(
             submission.answer["finalized"] = True
             submission.submitted_at = django_now()
             submission.save()
-        log.info(f'########################## course_id {self.block_course_id}')
         from_address = configuration_helpers.get_value('ACTIVATION_EMAIL_FROM_ADDRESS') or (
                             configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
                         )
         message_payload = self.staff_grading_data()
-        send_email_to_instructor.delay(str(self.block_course_id),from_address,message_payload)
-        save_entry_to_openedxdb.delay(str(self.block_course_id),message_payload)
+        direct_link = request.params.get("direct_link", None)
+        send_email_to_instructor.delay(str(self.block_course_id),from_address,message_payload,direct_link)
+        save_entry_to_openedxdb.delay(str(self.block_course_id),message_payload,direct_link)
         return Response(json_body=self.student_state())
 
     @XBlock.handler
@@ -625,9 +625,11 @@ class StaffGradedAssignmentXBlock(
         used, the block's "clear_student_state" function is called if it exists.
         """
         student_id = kwargs["user_id"]
+        log.info(f"#################### student_id {student_id}")
         for submission in submissions_api.get_submissions(
             self.get_student_item_dict(student_id)
         ):
+            log.info(f"#################### submission {submission}")
             submission_file_sha1 = submission["answer"].get("sha1")
             submission_filename = submission["answer"].get("filename")
             submission_file_path = self.file_storage_path(

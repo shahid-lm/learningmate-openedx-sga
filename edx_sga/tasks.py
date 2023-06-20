@@ -155,7 +155,7 @@ def get_zip_file_path(username, course_id, block_id, locator):
     )
     
 @shared_task(bind=True, default_retry_delay=30, max_retries=2)
-def send_email_to_instructor(self,course_id,from_address,message_payload):
+def send_email_to_instructor(self,course_id,from_address,message_payload,direct_link):
     try:
         if course_id not in ['',None]:
             if message_payload['assignments']:
@@ -163,7 +163,7 @@ def send_email_to_instructor(self,course_id,from_address,message_payload):
                         '''.format(message_payload['assignments'][-1].get('username',None),
                                    message_payload['assignments'][-1].get('filename',None),
                                    message_payload['assignments'][-1].get('timestamp',None),
-                                   "Not implemented yet"
+                                   direct_link
                                 )
             else:
                 message = 'No submissions'
@@ -190,7 +190,7 @@ def send_email_to_instructor(self,course_id,from_address,message_payload):
         return
     
 @shared_task(bind=True)
-def save_entry_to_openedxdb(self, course_id, message_payload):
+def save_entry_to_openedxdb(self, course_id, message_payload, direct_link):
     try:
         # convert course_key to name
         course_key = CourseKey.from_string(course_id)
@@ -200,7 +200,7 @@ def save_entry_to_openedxdb(self, course_id, message_payload):
         data = {
             "course_name" : course_name,
             "assignment_name" : message_payload['display_name'],
-            "direct_link" : "https://learningmate.com/",
+            "direct_link" : direct_link,#"https://learningmate.com/",
             "teacher_id" : teacher_ids, # list of techer_ids stored as string
             "student_username" : message_payload['assignments'][-1].get('username',None)
         }
