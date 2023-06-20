@@ -155,14 +155,15 @@ def get_zip_file_path(username, course_id, block_id, locator):
     )
     
 @shared_task(bind=True, default_retry_delay=30, max_retries=2)
-def send_email_to_instructor(self,course_id,from_address,message_payload,direct_link):
+def send_email_to_instructor(self,course_id,from_address,message_payload,direct_link,submission_uuid):
     try:
         if course_id not in ['',None]:
             if message_payload['assignments']:
+                current_submission = [submission for submission in message_payload[['assignments']] if submission['submission_id'] == submission_uuid][0]
                 message='''There's a new submission\nStudent Username : {}\nFilename : {}\nSubmitted At : {}\nGo To All Submissions : {}
-                        '''.format(message_payload['assignments'][-1].get('username',None),
-                                   message_payload['assignments'][-1].get('filename',None),
-                                   message_payload['assignments'][-1].get('timestamp',None),
+                        '''.format(current_submission.get('username',None),
+                                   current_submission.get('filename',None),
+                                   current_submission.get('timestamp',None),
                                    direct_link
                                 )
             else:
@@ -190,20 +191,22 @@ def send_email_to_instructor(self,course_id,from_address,message_payload,direct_
         return
     
 @shared_task(bind=True)
-def save_entry_to_openedxdb(self, course_id, message_payload, direct_link):
+def save_entry_to_openedxdb(self, course_id, message_payload, direct_link,submission_uuid):
     try:
         # convert course_key to name
         course_key = CourseKey.from_string(course_id)
         course = get_course_by_id(course_key, depth=None)
         course_name = course.display_name_with_default
         teacher_ids = json.dumps(list(CourseAccessRole.objects.filter(course_id=course_id).values_list('user_id',flat=True)))
+        current_submission = [submission for submission in message_payload[['assignments']] if submission['submission_id'] == submission_uuid][0]
         data = {
             "course_name" : course_name,
             "assignment_name" : message_payload['display_name'],
             "direct_link" : direct_link,#"https://learningmate.com/",
             "teacher_id" : teacher_ids, # list of techer_ids stored as string
-            "student_username" : message_payload['assignments'][-1].get('username',None)
+            "student_username" : current_submission.get('username',None)
         }
+        data.update({"submission_id" : submission_uuid})
         log.info(f'############# save_entry_to_openedxdb data-> {data}#############')
         serializer = StaffGradedSubmissionsSerializer(data=data)
         if serializer.is_valid():
