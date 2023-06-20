@@ -159,7 +159,8 @@ def send_email_to_instructor(self,course_id,from_address,message_payload,direct_
     try:
         if course_id not in ['',None]:
             if message_payload['assignments']:
-                current_submission = [submission for submission in message_payload[['assignments']] if submission['submission_id'] == submission_uuid][0]
+                current_submission = [submission for submission in message_payload['assignments'] if submission['submission_id'] == submission_uuid][0]
+                log.info(f'######################## current_submission {current_submission}')
                 message='''There's a new submission\nStudent Username : {}\nFilename : {}\nSubmitted At : {}\nGo To All Submissions : {}
                         '''.format(current_submission.get('username',None),
                                    current_submission.get('filename',None),
@@ -168,7 +169,8 @@ def send_email_to_instructor(self,course_id,from_address,message_payload,direct_
                                 )
             else:
                 message = 'No submissions'
-            mail_subject=f"New submission for Staff Graded Assignment"
+            log.info(f'############## message {message}')
+            mail_subject="New submission for Staff Graded Assignment"
             # filter CourseAccessRole model to get list of instructor Ids
             all_teacher_emailIds = []
             course_access_objs = CourseAccessRole.objects.filter(course_id=course_id).values()
@@ -198,7 +200,8 @@ def save_entry_to_openedxdb(self, course_id, message_payload, direct_link,submis
         course = get_course_by_id(course_key, depth=None)
         course_name = course.display_name_with_default
         teacher_ids = json.dumps(list(CourseAccessRole.objects.filter(course_id=course_id).values_list('user_id',flat=True)))
-        current_submission = [submission for submission in message_payload[['assignments']] if submission['submission_id'] == submission_uuid][0]
+        current_submission = [submission for submission in message_payload['assignments'] if submission['submission_id'] == submission_uuid][0]
+        log.info(f'######################## current_submission {current_submission}')
         data = {
             "course_name" : course_name,
             "assignment_name" : message_payload['display_name'],
