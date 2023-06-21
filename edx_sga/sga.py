@@ -38,10 +38,18 @@ from web_fragments.fragment import Fragment
 from xblockutils.studio_editable import StudioEditableXBlockMixin
 from xmodule.contentstore.content import StaticContent
 from xmodule.util.duedate import get_extended_due_date
+from lms.djangoapps.lms_xblock.models import StaffGradedSubmissions
+
 
 from edx_sga.constants import ITEM_TYPE
 from edx_sga.showanswer import ShowAnswerXBlockMixin
-from edx_sga.tasks import get_zip_file_name, get_zip_file_path, zip_student_submissions
+from edx_sga.tasks import (
+                            get_zip_file_name, 
+                            get_zip_file_path, 
+                            zip_student_submissions,
+                            send_email_to_instructor,
+                            save_entry_to_openedxdb
+                            )
 from edx_sga.utils import (
     file_contents_iter,
     get_file_modified_time_utc,
@@ -50,6 +58,7 @@ from edx_sga.utils import (
     is_finalized_submission,
     utcnow,
 )
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 
 log = logging.getLogger(__name__)
 
@@ -303,6 +312,13 @@ class StaffGradedAssignmentXBlock(
             submission.answer["finalized"] = True
             submission.submitted_at = django_now()
             submission.save()
+        from_address = configuration_helpers.get_value('ACTIVATION_EMAIL_FROM_ADDRESS') or (
+                            configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
+                        )
+        message_payload = self.staff_grading_data()
+        direct_link = request.params.get("direct_link", None)
+        send_email_to_instructor.delay(str(self.block_course_id),from_address,message_payload,direct_link,submission_data["uuid"])
+        save_entry_to_openedxdb.delay(str(self.block_course_id),message_payload,direct_link,submission_data["uuid"])
         return Response(json_body=self.student_state())
 
     @XBlock.handler
@@ -624,6 +640,13 @@ class StaffGradedAssignmentXBlock(
             submissions_api.reset_score(
                 student_id, self.block_course_id, self.block_id, clear_state=True
             )
+            submission_id = submission.get('uuid')
+            submission = StaffGradedSubmissions.objects.filter(submission_id=submission_id)
+            if submission.exists():
+                submission.delete()
+                log.info(f'Deleted {submission_id} submission from StaffGradedSubmissions model')
+            else:
+                log.error(f'Failed to delete submission {submission_id} from StaffGradedSubmissions model')
 
     def max_score(self):
         """
