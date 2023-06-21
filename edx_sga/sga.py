@@ -627,11 +627,9 @@ class StaffGradedAssignmentXBlock(
         used, the block's "clear_student_state" function is called if it exists.
         """
         student_id = kwargs["user_id"]
-        log.info(f"#################### student_id {student_id}")
         for submission in submissions_api.get_submissions(
             self.get_student_item_dict(student_id)
         ):
-            log.info(f"#################### submission {submission}")
             submission_file_sha1 = submission["answer"].get("sha1")
             submission_filename = submission["answer"].get("filename")
             submission_file_path = self.file_storage_path(
